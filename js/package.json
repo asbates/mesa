@@ -1,0 +1,23 @@
+{
+  "name": "mesa",
+  "version": "0.0.0.9000",
+  "description": "JavaScript source for R package mesa.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "keywords": [],
+  "author": "Andrew Bates",
+  "license": "MIT",
+  "dependencies": {
+    "@tanstack/svelte-query": "^5.32.1",
+    "@tanstack/svelte-table": "^8.13.2",
+    "svelte": "^4.2.8"
+  },
+  "devDependencies": {
+    "esbuild": "0.19.8",
+    "esbuild-plugin-globals": "^0.2.0",
+    "esbuild-svelte": "^0.8.0"
+  }
+}
