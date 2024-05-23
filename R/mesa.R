@@ -1,16 +1,14 @@
 mesa <- function(
     columns,
     data,
-    ssrOptions = mesaSSROptions,
-    paginationOptions = mesaPaginationOptions
+    ssrOptions = mesaSSROptions
 ) {
   # need to merge options lists with the defaults
   # so users only need to specify the change, rather than the whole list
   list(
     columns = columns,
     data = data,
-    ssrOptions = ssrOptions,
-    paginationOptions = paginationOptions
+    ssrOptions = ssrOptions
   )
 }
 
@@ -51,6 +49,12 @@ renderMesa <- function(expr, env = parent.frame(), quoted = FALSE) {
       )
 
 
+    } else if (props$ssrOptions$useSSR && props$ssrOptions$useInfiniteScroll) {
+      props <- ssrInfiniteScrollRenderHook(
+        session,
+        id,
+        props
+      )
     } else {
       props$data <- jsonlite::toJSON(props$data)
     }

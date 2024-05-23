@@ -8,7 +8,8 @@ mesaDependency <- function() {
     name = "mesa",
     version = "0.0.1",
     src = system.file(package = "mesa"),
-    script = "mesa.js"
+    script = "mesa.js",
+    stylesheet = "mesa.css"
   )
 }
 

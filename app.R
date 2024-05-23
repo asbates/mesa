@@ -5,27 +5,26 @@ devtools::load_all(".")
 ui <- function() {
   tagList(
     mesaDependency(),
-    mesaOutput("tbl"),
-    tags$div(
-      class = "test"
-    )
+    mesaOutput("tbl")
   )
 }
 
 server <- function(input, output, session) {
 
+  mtcarsplus <- do.call("rbind", lapply(1:10, \(x) mtcars))
+
   output$tbl <- renderMesa({
     mesa(
       columns = lapply(
-        names(mtcars),
+        names(mtcarsplus),
         \(name) {
           list(
             accessorKey = name
           )
         }
       ),
-      data = mtcars,
-      ssrOptions = list(useSSR = TRUE, usePagination = TRUE)
+      data = mtcarsplus,
+      ssrOptions = list(useSSR = TRUE, usePagination = FALSE, useInfiniteScroll = TRUE)
     )
   })
 
