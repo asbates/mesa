@@ -8582,59 +8582,6 @@
 
   // components/Mesa.svelte
   function create_if_block_2(ctx) {
-    let mesaserverinfinitescroll;
-    let current;
-    mesaserverinfinitescroll = new MesaServerInfiniteScroll_default({
-      props: {
-        id: (
-          /*id*/
-          ctx[0]
-        ),
-        columns: (
-          /*columns*/
-          ctx[1]
-        )
-      }
-    });
-    return {
-      c() {
-        create_component(mesaserverinfinitescroll.$$.fragment);
-      },
-      l(nodes) {
-        claim_component(mesaserverinfinitescroll.$$.fragment, nodes);
-      },
-      m(target, anchor) {
-        mount_component(mesaserverinfinitescroll, target, anchor);
-        current = true;
-      },
-      p(ctx2, dirty) {
-        const mesaserverinfinitescroll_changes = {};
-        if (dirty & /*id*/
-        1)
-          mesaserverinfinitescroll_changes.id = /*id*/
-          ctx2[0];
-        if (dirty & /*columns*/
-        2)
-          mesaserverinfinitescroll_changes.columns = /*columns*/
-          ctx2[1];
-        mesaserverinfinitescroll.$set(mesaserverinfinitescroll_changes);
-      },
-      i(local) {
-        if (current)
-          return;
-        transition_in(mesaserverinfinitescroll.$$.fragment, local);
-        current = true;
-      },
-      o(local) {
-        transition_out(mesaserverinfinitescroll.$$.fragment, local);
-        current = false;
-      },
-      d(detaching) {
-        destroy_component(mesaserverinfinitescroll, detaching);
-      }
-    };
-  }
-  function create_if_block_1(ctx) {
     let mesaserverpagination;
     let current;
     mesaserverpagination = new MesaServerPagination_default({
@@ -8684,6 +8631,59 @@
       },
       d(detaching) {
         destroy_component(mesaserverpagination, detaching);
+      }
+    };
+  }
+  function create_if_block_1(ctx) {
+    let mesaserverinfinitescroll;
+    let current;
+    mesaserverinfinitescroll = new MesaServerInfiniteScroll_default({
+      props: {
+        id: (
+          /*id*/
+          ctx[0]
+        ),
+        columns: (
+          /*columns*/
+          ctx[1]
+        )
+      }
+    });
+    return {
+      c() {
+        create_component(mesaserverinfinitescroll.$$.fragment);
+      },
+      l(nodes) {
+        claim_component(mesaserverinfinitescroll.$$.fragment, nodes);
+      },
+      m(target, anchor) {
+        mount_component(mesaserverinfinitescroll, target, anchor);
+        current = true;
+      },
+      p(ctx2, dirty) {
+        const mesaserverinfinitescroll_changes = {};
+        if (dirty & /*id*/
+        1)
+          mesaserverinfinitescroll_changes.id = /*id*/
+          ctx2[0];
+        if (dirty & /*columns*/
+        2)
+          mesaserverinfinitescroll_changes.columns = /*columns*/
+          ctx2[1];
+        mesaserverinfinitescroll.$set(mesaserverinfinitescroll_changes);
+      },
+      i(local) {
+        if (current)
+          return;
+        transition_in(mesaserverinfinitescroll.$$.fragment, local);
+        current = true;
+      },
+      o(local) {
+        transition_out(mesaserverinfinitescroll.$$.fragment, local);
+        current = false;
+      },
+      d(detaching) {
+        destroy_component(mesaserverinfinitescroll, detaching);
       }
     };
   }
@@ -8762,13 +8762,13 @@
       if (
         /*ssrOptions*/
         ctx2[3].useSSR && /*ssrOptions*/
-        ctx2[3].usePagination
+        ctx2[3].useInfiniteScroll
       )
         return 1;
       if (
         /*ssrOptions*/
         ctx2[3].useSSR && /*ssrOptions*/
-        ctx2[3].useInfiniteScroll
+        ctx2[3].usePagination
       )
         return 2;
       return -1;

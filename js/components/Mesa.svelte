@@ -17,9 +17,9 @@
 <QueryClientProvider client={queryClient}>
   {#if !ssrOptions.useSSR}
     <MesaClient {id} {columns} {data} />
-  {:else if ssrOptions.useSSR && ssrOptions.usePagination}
-    <MesaServerPagination {id} {columns} />
   {:else if ssrOptions.useSSR && ssrOptions.useInfiniteScroll}
     <MesaServerInfiniteScroll {id} {columns} />
+  {:else if ssrOptions.useSSR && ssrOptions.usePagination}
+    <MesaServerPagination {id} {columns} />
   {/if}
 </QueryClientProvider>
