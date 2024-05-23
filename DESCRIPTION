@@ -3,7 +3,7 @@ Title: Headless UI Tables For Shiny
 Version: 0.0.0.9000
 Authors@R: 
     person("Andrew", "Bates", , "andrew.bates@atorusresearch.com", role = c("aut", "cre"))
-Description: Fully customizable tables for Shiny built on Tanstack Table (https://tanstack.com/table/)
+Description: Fully customizable tables for Shiny built on Tanstack Table (https://tanstack.com/table/).
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -13,3 +13,6 @@ Imports:
     htmltools,
     jsonlite,
     shiny
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

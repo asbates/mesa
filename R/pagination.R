@@ -33,7 +33,6 @@ paginate <- function(data, page_size = NULL) {
 
   data$pageIndex <- page_col
 
-  # list(data = data, pageCount = n_pages)
   data
 
 }
