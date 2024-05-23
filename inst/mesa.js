@@ -35,6 +35,9 @@
   // index.js
   var import_Shiny2 = __toESM(require_Shiny(), 1);
 
+  // bindings/MesaOutputBinding.js
+  var import_Shiny = __toESM(require_Shiny(), 1);
+
   // node_modules/svelte/src/runtime/internal/utils.js
   function noop() {
   }
@@ -79,8 +82,8 @@
     subscribe(store, (_) => value = _)();
     return value;
   }
-  function component_subscribe(component2, store, callback) {
-    component2.$$.on_destroy.push(subscribe(store, callback));
+  function component_subscribe(component, store, callback) {
+    component.$$.on_destroy.push(subscribe(store, callback));
   }
   function create_slot(definition, ctx, $$scope, fn) {
     if (definition) {
@@ -433,14 +436,14 @@
     );
     return result;
   }
-  function construct_svelte_component(component2, props) {
-    return new component2(props);
+  function construct_svelte_component(component, props) {
+    return new component(props);
   }
 
   // node_modules/svelte/src/runtime/internal/lifecycle.js
   var current_component;
-  function set_current_component(component2) {
-    current_component = component2;
+  function set_current_component(component) {
+    current_component = component;
   }
   function get_current_component() {
     if (!current_component)
@@ -487,10 +490,10 @@
     do {
       try {
         while (flushidx < dirty_components.length) {
-          const component2 = dirty_components[flushidx];
+          const component = dirty_components[flushidx];
           flushidx++;
-          set_current_component(component2);
-          update(component2.$$);
+          set_current_component(component);
+          update(component.$$);
         }
       } catch (e) {
         dirty_components.length = 0;
@@ -633,15 +636,15 @@
     }
     return escaped + str.substring(last);
   }
-  function validate_component(component2, name) {
-    if (!component2 || !component2.$$render) {
+  function validate_component(component, name) {
+    if (!component || !component.$$render) {
       if (name === "svelte:component")
         name += " this={...}";
       throw new Error(
         `<${name}> is not a valid SSR component. You may need to review your build config to ensure that dependencies are compiled, rather than imported as pre-compiled modules. Otherwise you may need to fix a <${name}>.`
       );
     }
-    return component2;
+    return component;
   }
   var on_destroy;
   function create_ssr_component(fn) {
@@ -688,22 +691,22 @@
   function claim_component(block, parent_nodes) {
     block && block.l(parent_nodes);
   }
-  function mount_component(component2, target, anchor) {
-    const { fragment, after_update } = component2.$$;
+  function mount_component(component, target, anchor) {
+    const { fragment, after_update } = component.$$;
     fragment && fragment.m(target, anchor);
     add_render_callback(() => {
-      const new_on_destroy = component2.$$.on_mount.map(run).filter(is_function);
-      if (component2.$$.on_destroy) {
-        component2.$$.on_destroy.push(...new_on_destroy);
+      const new_on_destroy = component.$$.on_mount.map(run).filter(is_function);
+      if (component.$$.on_destroy) {
+        component.$$.on_destroy.push(...new_on_destroy);
       } else {
         run_all(new_on_destroy);
       }
-      component2.$$.on_mount = [];
+      component.$$.on_mount = [];
     });
     after_update.forEach(add_render_callback);
   }
-  function destroy_component(component2, detaching) {
-    const $$ = component2.$$;
+  function destroy_component(component, detaching) {
+    const $$ = component.$$;
     if ($$.fragment !== null) {
       flush_render_callbacks($$.after_update);
       run_all($$.on_destroy);
@@ -712,18 +715,18 @@
       $$.ctx = [];
     }
   }
-  function make_dirty(component2, i) {
-    if (component2.$$.dirty[0] === -1) {
-      dirty_components.push(component2);
+  function make_dirty(component, i) {
+    if (component.$$.dirty[0] === -1) {
+      dirty_components.push(component);
       schedule_update();
-      component2.$$.dirty.fill(0);
+      component.$$.dirty.fill(0);
     }
-    component2.$$.dirty[i / 31 | 0] |= 1 << i % 31;
+    component.$$.dirty[i / 31 | 0] |= 1 << i % 31;
   }
-  function init(component2, options, instance7, create_fragment7, not_equal, props, append_styles = null, dirty = [-1]) {
+  function init(component, options, instance7, create_fragment7, not_equal, props, append_styles = null, dirty = [-1]) {
     const parent_component = current_component;
-    set_current_component(component2);
-    const $$ = component2.$$ = {
+    set_current_component(component);
+    const $$ = component.$$ = {
       fragment: null,
       ctx: [],
       // state
@@ -746,13 +749,13 @@
     };
     append_styles && append_styles($$.root);
     let ready = false;
-    $$.ctx = instance7 ? instance7(component2, options.props || {}, (i, ret, ...rest) => {
+    $$.ctx = instance7 ? instance7(component, options.props || {}, (i, ret, ...rest) => {
       const value = rest.length ? rest[0] : ret;
       if ($$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value)) {
         if (!$$.skip_bound && $$.bound[i])
           $$.bound[i](value);
         if (ready)
-          make_dirty(component2, i);
+          make_dirty(component, i);
       }
       return ret;
     }) : [];
@@ -770,8 +773,8 @@
         $$.fragment && $$.fragment.c();
       }
       if (options.intro)
-        transition_in(component2.$$.fragment);
-      mount_component(component2, options.target, options.anchor);
+        transition_in(component.$$.fragment);
+      mount_component(component, options.target, options.anchor);
       end_hydrating();
       flush();
     }
@@ -3870,19 +3873,19 @@
     return WrapperComp;
   }
   var renderComponent = typeof window === "undefined" ? renderServer : renderClient;
-  function isSvelteServerComponent(component2) {
-    return typeof component2 === "object" && typeof component2.$$render === "function" && typeof component2.render === "function";
+  function isSvelteServerComponent(component) {
+    return typeof component === "object" && typeof component.$$render === "function" && typeof component.render === "function";
   }
-  function isSvelteClientComponent(component2) {
+  function isSvelteClientComponent(component) {
     var _component$name, _component$name2;
     let isHMR = "__SVELTE_HMR" in window;
-    return component2.prototype instanceof SvelteComponent || isHMR && ((_component$name = component2.name) == null ? void 0 : _component$name.startsWith("Proxy<")) && ((_component$name2 = component2.name) == null ? void 0 : _component$name2.endsWith(">"));
+    return component.prototype instanceof SvelteComponent || isHMR && ((_component$name = component.name) == null ? void 0 : _component$name.startsWith("Proxy<")) && ((_component$name2 = component.name) == null ? void 0 : _component$name2.endsWith(">"));
   }
-  function isSvelteComponent(component2) {
+  function isSvelteComponent(component) {
     if (typeof document === "undefined") {
-      return isSvelteServerComponent(component2);
+      return isSvelteServerComponent(component);
     } else {
-      return isSvelteClientComponent(component2);
+      return isSvelteClientComponent(component);
     }
   }
   function wrapInPlaceholder(content) {
@@ -3890,14 +3893,14 @@
       content
     });
   }
-  function flexRender(component2, props) {
-    if (!component2)
+  function flexRender(component, props) {
+    if (!component)
       return null;
-    if (isSvelteComponent(component2)) {
-      return renderComponent(component2, props);
+    if (isSvelteComponent(component)) {
+      return renderComponent(component, props);
     }
-    if (typeof component2 === "function") {
-      const result = component2(props);
+    if (typeof component === "function") {
+      const result = component(props);
       if (result === null || result === void 0)
         return null;
       if (isSvelteComponent(result)) {
@@ -3905,7 +3908,7 @@
       }
       return wrapInPlaceholder(result);
     }
-    return wrapInPlaceholder(component2);
+    return wrapInPlaceholder(component);
   }
   function createSvelteTable(options) {
     let optionsStore;
@@ -4600,16 +4603,6 @@
         $$invalidate(3, columns = $$props2.columns);
       if ("data" in $$props2)
         $$invalidate(4, data = $$props2.data);
-    };
-    $$self.$$.update = () => {
-      if ($$self.$$.dirty & /*columns, data*/
-      24) {
-        $: {
-          options.update((oldOptions) => {
-            return { ...oldOptions, columns, data };
-          });
-        }
-      }
     };
     return [id, $table, table, columns, data];
   }
@@ -7025,25 +7018,75 @@
   };
   var QueryClientProvider_default = QueryClientProvider;
 
+  // utils/fetchData.js
+  var fetchDataPagination = async (id, pagination) => {
+    const url = window.mesa.tableRegistry.find((table) => table.id === id).url;
+    const response = await fetch(`${url}?pageIndex=${pagination.pageIndex}`);
+    const data = await response.json();
+    return data;
+  };
+  var fetchDataInfiniteScroll = async (id, { pageParam }) => {
+    const url = window.mesa.tableRegistry.find((table) => table.id === id).url;
+    const response = await fetch(`${url}?cursor=${pageParam}`);
+    const data = await response.json();
+    return data;
+  };
+
+  // utils/mesa.js
+  var initMesaComponent = (props) => {
+    Binding = window.mesa.ShinyBinding;
+    Binding.initializeComponent(props);
+  };
+  var registerMesaTable = (id, instance7) => {
+    const tableIsRegistered = window.mesa.tableRegistry.filter((table) => table.id === id).length > 0 ? true : false;
+    if (!tableIsRegistered) {
+      window.mesa.tableRegistry.push({ id: msg.id, instance: instance7 });
+      return;
+    }
+    window.mesa.tableRegistry.forEach((table) => {
+      if (table.id === id) {
+        table.instance = instance7;
+        return table;
+      } else {
+        return table;
+      }
+    });
+  };
+  var registerMesaData = (msg2) => {
+    const tableIsRegistered = window.mesa.tableRegistry.filter((table) => table.id === msg2.id).length > 0 ? true : false;
+    if (!tableIsRegistered) {
+      window.mesa.tableRegistry.push({ id: msg2.id, url: msg2.url });
+      return;
+    }
+    window.mesa.tableRegistry.forEach((table) => {
+      if (table.id === msg2.id) {
+        table.url = msg2.url;
+        return table;
+      } else {
+        return table;
+      }
+    });
+  };
+
   // components/MesaServerPagination.svelte
   function get_each_context2(ctx, list, i) {
     const child_ctx = ctx.slice();
-    child_ctx[11] = list[i];
+    child_ctx[9] = list[i];
     return child_ctx;
   }
   function get_each_context_12(ctx, list, i) {
     const child_ctx = ctx.slice();
-    child_ctx[14] = list[i];
+    child_ctx[12] = list[i];
     return child_ctx;
   }
   function get_each_context_22(ctx, list, i) {
     const child_ctx = ctx.slice();
-    child_ctx[17] = list[i];
+    child_ctx[15] = list[i];
     return child_ctx;
   }
   function get_each_context_32(ctx, list, i) {
     const child_ctx = ctx.slice();
-    child_ctx[20] = list[i];
+    child_ctx[18] = list[i];
     return child_ctx;
   }
   function create_if_block2(ctx) {
@@ -7052,9 +7095,9 @@
     let current;
     var switch_value = flexRender(
       /*header*/
-      ctx[20].column.columnDef.header,
+      ctx[18].column.columnDef.header,
       /*header*/
-      ctx[20].getContext()
+      ctx[18].getContext()
     );
     function switch_props(ctx2, dirty) {
       return {};
@@ -7078,7 +7121,7 @@
         this.h();
       },
       h() {
-        attr(th, "class", "sticky svelte-17wwwme");
+        attr(th, "class", "sticky");
       },
       m(target, anchor) {
         insert_hydration(target, th, anchor);
@@ -7090,9 +7133,9 @@
         if (dirty & /*$table*/
         2 && switch_value !== (switch_value = flexRender(
           /*header*/
-          ctx2[20].column.columnDef.header,
+          ctx2[18].column.columnDef.header,
           /*header*/
-          ctx2[20].getContext()
+          ctx2[18].getContext()
         ))) {
           if (switch_instance) {
             group_outros();
@@ -7138,7 +7181,7 @@
     let if_block_anchor;
     let current;
     let if_block = !/*header*/
-    ctx[20].isPlaceholder && create_if_block2(ctx);
+    ctx[18].isPlaceholder && create_if_block2(ctx);
     return {
       c() {
         if (if_block)
@@ -7158,7 +7201,7 @@
       },
       p(ctx2, dirty) {
         if (!/*header*/
-        ctx2[20].isPlaceholder) {
+        ctx2[18].isPlaceholder) {
           if (if_block) {
             if_block.p(ctx2, dirty);
             if (dirty & /*$table*/
@@ -7204,7 +7247,7 @@
     let current;
     let each_value_3 = ensure_array_like(
       /*headerGroup*/
-      ctx[17].headers
+      ctx[15].headers
     );
     let each_blocks = [];
     for (let i = 0; i < each_value_3.length; i += 1) {
@@ -7245,7 +7288,7 @@
         2) {
           each_value_3 = ensure_array_like(
             /*headerGroup*/
-            ctx2[17].headers
+            ctx2[15].headers
           );
           let i;
           for (i = 0; i < each_value_3.length; i += 1) {
@@ -7296,9 +7339,9 @@
     let current;
     var switch_value = flexRender(
       /*cell*/
-      ctx[14].column.columnDef.cell,
+      ctx[12].column.columnDef.cell,
       /*cell*/
-      ctx[14].getContext()
+      ctx[12].getContext()
     );
     function switch_props(ctx2, dirty) {
       return {};
@@ -7329,9 +7372,9 @@
         if (dirty & /*$table*/
         2 && switch_value !== (switch_value = flexRender(
           /*cell*/
-          ctx2[14].column.columnDef.cell,
+          ctx2[12].column.columnDef.cell,
           /*cell*/
-          ctx2[14].getContext()
+          ctx2[12].getContext()
         ))) {
           if (switch_instance) {
             group_outros();
@@ -7379,7 +7422,7 @@
     let current;
     let each_value_1 = ensure_array_like(
       /*row*/
-      ctx[11].getVisibleCells()
+      ctx[9].getVisibleCells()
     );
     let each_blocks = [];
     for (let i = 0; i < each_value_1.length; i += 1) {
@@ -7420,7 +7463,7 @@
         2) {
           each_value_1 = ensure_array_like(
             /*row*/
-            ctx2[11].getVisibleCells()
+            ctx2[9].getVisibleCells()
           );
           let i;
           for (i = 0; i < each_value_1.length; i += 1) {
@@ -7705,12 +7748,6 @@
     let $table;
     let { id } = $$props;
     let { columns = [] } = $$props;
-    const fetchData = async (pagination2) => {
-      const url = window.mesa.tableRegistry.find((table2) => table2.id === id).url;
-      const response = await fetch(`${url}?pageIndex=${pagination2.pageIndex}`);
-      const data = await response.json();
-      return data;
-    };
     const pagination = writable({ pageIndex: 1, pageSize: 10 });
     component_subscribe($$self, pagination, (value) => $$invalidate(5, $pagination = value));
     const setPagination = (updater) => {
@@ -7722,7 +7759,7 @@
     };
     const query = createQuery(derived(pagination, ($pagination2) => ({
       queryKey: ["mesa", id, $pagination2],
-      queryFn: () => fetchData($pagination2)
+      queryFn: () => fetchDataPagination(id, $pagination2)
     })));
     const options = derived([query, pagination], ([$query, $pagination2]) => ({
       columns,
@@ -7735,22 +7772,7 @@
     }));
     let table = createSvelteTable(options);
     component_subscribe($$self, table, (value) => $$invalidate(1, $table = value));
-    const registerTableInstance = (id2, instance7) => {
-      const tableIsRegistered = window.mesa.tableRegistry.filter((table2) => table2.id === id2).length > 0 ? true : false;
-      if (!tableIsRegistered) {
-        window.mesa.tableRegistry.push({ id: msg.id, instance: instance7 });
-        return;
-      }
-      window.mesa.tableRegistry.forEach((table2) => {
-        if (table2.id === id2) {
-          table2.instance = instance7;
-          return table2;
-        } else {
-          return table2;
-        }
-      });
-    };
-    registerTableInstance(id, table);
+    registerMesaTable(id, table);
     $$self.$$set = ($$props2) => {
       if ("id" in $$props2)
         $$invalidate(0, id = $$props2.id);
@@ -7811,14 +7833,6 @@
       }
     };
   }
-
-  // utils/fetchData.js
-  var fetchDataInfiniteScroll = async (id, { pageParam }) => {
-    const url = window.mesa.tableRegistry.find((table) => table.id === id).url;
-    const response = await fetch(`${url}?cursor=${pageParam}`);
-    const data = await response.json();
-    return data;
-  };
 
   // components/MesaServerInfiniteScroll.svelte
   function get_each_context3(ctx, list, i) {
@@ -8519,6 +8533,7 @@
     });
     let table = createSvelteTable(options);
     component_subscribe($$self, table, (value) => $$invalidate(3, $table = value));
+    registerMesaTable(id, table);
     let container;
     const intersecting_handler = () => {
       if ($query.hasPreviousPage && !$query.isFetchingPreviousPage) {
@@ -8935,12 +8950,12 @@
   };
   var Mesa_default = Mesa;
 
-  // bindings/OutputBinding.js
-  var import_Shiny = __toESM(require_Shiny(), 1);
+  // bindings/MesaOutputBinding.js
   var MesaOutputBinding = class extends Shiny.OutputBinding {
-    constructor(component2, selector2) {
+    constructor() {
       super();
-      this.component = component2;
+      this.component = Mesa_default;
+      this.selector = ".mesa";
     }
     initializeComponent(props) {
       this.componentInstance = new this.component({
@@ -8950,68 +8965,22 @@
       });
     }
     find(scope) {
-      return document.querySelectorAll(selector);
+      return document.querySelectorAll(this.selector);
     }
     renderValue(el, data) {
       this.componentInstance.$set(data);
     }
   };
-  function registerMesaComponent(component2, selector2, outputName2) {
-    const Binding2 = new MesaOutputBinding(component2, selector2);
-    Shiny.outputBindings.register(Binding2, outputName2);
-    window.mesa.bindings.push({
-      outputName: outputName2,
-      Binding: Binding2
-    });
-  }
-  function initMesaComponent(outputName2, props) {
-    Binding = window.mesa.bindings.find(
-      (binding) => binding.outputName === outputName2
-    )["Binding"];
-    Binding.initializeComponent(props);
-  }
-
-  // message-handlers.js
-  var registerMesaData = (msg2) => {
-    const tableIsRegistered = window.mesa.tableRegistry.filter((table) => table.id === msg2.id).length > 0 ? true : false;
-    if (!tableIsRegistered) {
-      window.mesa.tableRegistry.push({ id: msg2.id, url: msg2.url });
-      return;
-    }
-    window.mesa.tableRegistry.forEach((table) => {
-      if (table.id === msg2.id) {
-        table.url = msg2.url;
-        return table;
-      } else {
-        return table;
-      }
-    });
-  };
 
   // index.js
+  var Binding2 = new MesaOutputBinding();
+  Shiny.outputBindings.register(Binding2, "Mesa");
+  Shiny.addCustomMessageHandler("registerMesaData", registerMesaData);
   window.mesa = {
     initMesaComponent,
-    // tables: [], // {id: 'html id for the table', sessionUrl: 'url for the session, if using ssr', instance: 'the table instance'}
     tableRegistry: [],
-    // 'components' is probably not needed
-    // b/c in mesaOutput(), we have to call the correct component, but we
-    // don't know yet if we'll need client rendered, server rendered, etc.
-    // so we never call the component directly from this 'components' object
-    components: {
-      Mesa: Mesa_default
-    },
-    // 'Client', 'ClientPagination', 'ServerPagination', 'ServerInfScroll', etc.
-    // most likely don't actually need this
-    // or at least can simplify it
-    bindings: []
-    // {outputName: 'name', binding: 'the class'}
+    ShinyBinding: Binding2
   };
-  registerMesaComponent(
-    component = Mesa_default,
-    selector = ".mesa",
-    outputName = "Mesa"
-  );
-  Shiny.addCustomMessageHandler("registerMesaData", registerMesaData);
 })();
 /*! Bundled license information:
 
