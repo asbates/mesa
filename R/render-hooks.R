@@ -36,6 +36,8 @@ ssrPaginationRenderHook <- function(session, id, props) {
     }
   )
 
+  props$data <- data.frame()
+
   props
 }
 
@@ -83,6 +85,8 @@ ssrInfiniteScrollRenderHook <- function(session, id, props) {
       }
     }
   )
+
+  props$data <- data.frame()
 
   props
 }
