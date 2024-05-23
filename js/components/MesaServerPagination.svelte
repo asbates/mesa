@@ -8,16 +8,11 @@
   } from '@tanstack/svelte-table';
   import { writable, derived } from 'svelte/store';
   import { createQuery } from '@tanstack/svelte-query';
+  import { fetchDataPagination } from '../utils/fetchData.js';
+  import { registerMesaTable } from '../utils/mesa.js';
 
   export let id;
   export let columns = [];
-
-  const fetchData = async (pagination) => {
-    const url = window.mesa.tableRegistry.find((table) => table.id === id).url;
-    const response = await fetch(`${url}?pageIndex=${pagination.pageIndex}`);
-    const data = await response.json();
-    return data;
-  };
 
   const pagination = writable({
     pageIndex: 1,
@@ -34,7 +29,7 @@
   const query = createQuery(
     derived(pagination, ($pagination) => ({
       queryKey: ['mesa', id, $pagination],
-      queryFn: () => fetchData($pagination),
+      queryFn: () => fetchDataPagination(id, $pagination),
     })),
   );
 
@@ -52,27 +47,7 @@
 
   let table = createSvelteTable(options);
 
-  const registerTableInstance = (id, instance) => {
-    const tableIsRegistered =
-      window.mesa.tableRegistry.filter((table) => table.id === id).length > 0
-        ? true
-        : false;
-
-    if (!tableIsRegistered) {
-      window.mesa.tableRegistry.push({ id: msg.id, instance: instance });
-      return;
-    }
-
-    window.mesa.tableRegistry.forEach((table) => {
-      if (table.id === id) {
-        table.instance = instance;
-        return table;
-      } else {
-        return table;
-      }
-    });
-  };
-  registerTableInstance(id, table);
+  registerMesaTable(id, table);
 </script>
 
 <table {id} class="mesa">
@@ -112,12 +87,3 @@
   <button on:click={$table.previousPage()}>prev</button>
   <button on:click={$table.nextPage()}>next</button>
 </div>
-
-<style>
-  .sticky {
-    position: sticky;
-    top: 0;
-    background-color: #242424;
-    z-index: 1;
-  }
-</style>

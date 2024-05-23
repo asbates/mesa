@@ -12,8 +12,7 @@ mesa <- function(
   )
 }
 
-# note: can put the actual table tag here, if using hydrate = true
-# right now, i don't think hydrate = true is actually doing anything
+
 mesaOutput <- function(id) {
   props <- list(id = id)
   htmltools::tags$div(
@@ -22,7 +21,7 @@ mesaOutput <- function(id) {
     htmltools::tags$script(
       id = glue::glue("{id}-script"),
       glue::glue(
-        "window.mesa.initMesaComponent('Mesa', <jsonlite::toJSON(props, auto_unbox = TRUE)>)",
+        "window.mesa.initMesaComponent(<jsonlite::toJSON(props, auto_unbox = TRUE)>)",
         .open = "<",
         .close = ">"
       )

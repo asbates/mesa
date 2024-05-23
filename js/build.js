@@ -1,20 +1,20 @@
-import esbuild from "esbuild";
-import sveltePlugin from "esbuild-svelte";
-import GlobalsPlugin from "esbuild-plugin-globals";
+import esbuild from 'esbuild';
+import sveltePlugin from 'esbuild-svelte';
+import GlobalsPlugin from 'esbuild-plugin-globals';
 
 esbuild
   .build({
-    entryPoints: ["index.js"],
+    entryPoints: ['index.js'],
     bundle: true,
-    outfile: "../inst/mesa.js",
+    outfile: '../inst/mesa.js',
     plugins: [
       sveltePlugin({
         compilerOptions: { hydratable: true },
       }),
       GlobalsPlugin({
-        Shiny: "window.Shiny",
+        Shiny: 'window.Shiny',
       }),
     ],
-    logLevel: "info",
+    logLevel: 'info',
   })
   .catch(() => process.exit(1));
