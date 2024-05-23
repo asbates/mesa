@@ -11,27 +11,12 @@
   export let id;
   export let columns = [];
   export let data = [];
-  //   export let paginationOptions = {};
-
-  //   $: {
-  //     console.log(paginationOptions);
-  //   }
 
   let options = writable({
     data: data,
     columns: columns,
     getCoreRowModel: getCoreRowModel(),
   });
-
-  $: {
-    options.update((oldOptions) => {
-      return {
-        ...oldOptions,
-        columns: columns,
-        data: data,
-      };
-    });
-  }
 
   let table = createSvelteTable(options);
 

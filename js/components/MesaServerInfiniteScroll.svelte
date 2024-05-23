@@ -11,6 +11,7 @@
   import { derived } from 'svelte/store';
   import inView from '../utils/inView.js';
   import { fetchDataInfiniteScroll } from '../utils/fetchData.js';
+  import { registerMesaTable } from '../utils/mesa.js';
 
   export let id;
   export let columns = [];
@@ -38,6 +39,7 @@
   });
 
   let table = createSvelteTable(options);
+  registerMesaTable(id, table);
 
   let container;
 </script>
