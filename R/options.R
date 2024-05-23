@@ -6,7 +6,4 @@ mesaSSROptions <- list(
   useInfinteScroll = FALSE
 )
 
-mesaPaginationOptions <- list(
-  pageSize = 10
-)
 

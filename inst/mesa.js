@@ -126,6 +126,9 @@
     }
     return -1;
   }
+  function action_destroyer(action_result) {
+    return action_result && is_function(action_result.destroy) ? action_result.destroy : noop;
+  }
 
   // node_modules/svelte/src/runtime/internal/globals.js
   var globals = typeof window !== "undefined" ? window : typeof globalThis !== "undefined" ? globalThis : (
@@ -717,7 +720,7 @@
     }
     component2.$$.dirty[i / 31 | 0] |= 1 << i % 31;
   }
-  function init(component2, options, instance6, create_fragment6, not_equal, props, append_styles = null, dirty = [-1]) {
+  function init(component2, options, instance7, create_fragment7, not_equal, props, append_styles = null, dirty = [-1]) {
     const parent_component = current_component;
     set_current_component(component2);
     const $$ = component2.$$ = {
@@ -743,7 +746,7 @@
     };
     append_styles && append_styles($$.root);
     let ready = false;
-    $$.ctx = instance6 ? instance6(component2, options.props || {}, (i, ret, ...rest) => {
+    $$.ctx = instance7 ? instance7(component2, options.props || {}, (i, ret, ...rest) => {
       const value = rest.length ? rest[0] : ret;
       if ($$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value)) {
         if (!$$.skip_bound && $$.bound[i])
@@ -756,7 +759,7 @@
     $$.update();
     ready = true;
     run_all($$.before_update);
-    $$.fragment = create_fragment6 ? create_fragment6($$.ctx) : false;
+    $$.fragment = create_fragment7 ? create_fragment7($$.ctx) : false;
     if (options.target) {
       if (options.hydrate) {
         start_hydrating();
@@ -1035,9 +1038,9 @@
   function functionalUpdate(updater, input) {
     return typeof updater === "function" ? updater(input) : updater;
   }
-  function makeStateUpdater(key, instance6) {
+  function makeStateUpdater(key, instance7) {
     return (updater) => {
-      instance6.setState((old) => {
+      instance7.setState((old) => {
         return {
           ...old,
           [key]: functionalUpdate(updater, old[key])
@@ -4836,6 +4839,9 @@
     }
     return data;
   }
+  function keepPreviousData(previousData) {
+    return previousData;
+  }
   function addToEnd(items, item, max2 = 0) {
     const newItems = [...items, item];
     return max2 && newItems.length > max2 ? newItems.slice(1) : newItems;
@@ -6088,6 +6094,16 @@
       pageParams
     );
   }
+  function hasNextPage(options, data) {
+    if (!data)
+      return false;
+    return getNextPageParam(options, data) != null;
+  }
+  function hasPreviousPage(options, data) {
+    if (!data || !options.getPreviousPageParam)
+      return false;
+    return getPreviousPageParam(options, data) != null;
+  }
 
   // node_modules/@tanstack/query-core/build/modern/queryClient.js
   var QueryClient = class {
@@ -6780,6 +6796,64 @@
     return false;
   }
 
+  // node_modules/@tanstack/query-core/build/modern/infiniteQueryObserver.js
+  var InfiniteQueryObserver = class extends QueryObserver {
+    constructor(client, options) {
+      super(client, options);
+    }
+    bindMethods() {
+      super.bindMethods();
+      this.fetchNextPage = this.fetchNextPage.bind(this);
+      this.fetchPreviousPage = this.fetchPreviousPage.bind(this);
+    }
+    setOptions(options, notifyOptions) {
+      super.setOptions(
+        {
+          ...options,
+          behavior: infiniteQueryBehavior()
+        },
+        notifyOptions
+      );
+    }
+    getOptimisticResult(options) {
+      options.behavior = infiniteQueryBehavior();
+      return super.getOptimisticResult(options);
+    }
+    fetchNextPage(options) {
+      return this.fetch({
+        ...options,
+        meta: {
+          fetchMore: { direction: "forward" }
+        }
+      });
+    }
+    fetchPreviousPage(options) {
+      return this.fetch({
+        ...options,
+        meta: {
+          fetchMore: { direction: "backward" }
+        }
+      });
+    }
+    createResult(query, options) {
+      const { state } = query;
+      const result = super.createResult(query, options);
+      const { isFetching, isRefetching } = result;
+      const isFetchingNextPage = isFetching && state.fetchMeta?.fetchMore?.direction === "forward";
+      const isFetchingPreviousPage = isFetching && state.fetchMeta?.fetchMore?.direction === "backward";
+      return {
+        ...result,
+        fetchNextPage: this.fetchNextPage,
+        fetchPreviousPage: this.fetchPreviousPage,
+        hasNextPage: hasNextPage(options, state.data),
+        hasPreviousPage: hasPreviousPage(options, state.data),
+        isFetchingNextPage,
+        isFetchingPreviousPage,
+        isRefetching: isRefetching && !isFetchingNextPage && !isFetchingPreviousPage
+      };
+    }
+  };
+
   // node_modules/@tanstack/svelte-query/dist/context.js
   var _contextKey = "$$_queryClient";
   var getQueryClientContext = () => {
@@ -6848,6 +6922,11 @@
   // node_modules/@tanstack/svelte-query/dist/createQuery.js
   function createQuery(options, queryClient) {
     return createBaseQuery(options, QueryObserver, queryClient);
+  }
+
+  // node_modules/@tanstack/svelte-query/dist/createInfiniteQuery.js
+  function createInfiniteQuery(options, queryClient) {
+    return createBaseQuery(options, InfiniteQueryObserver, queryClient);
   }
 
   // node_modules/@tanstack/svelte-query/dist/QueryClientProvider.svelte
@@ -7656,15 +7735,15 @@
     }));
     let table = createSvelteTable(options);
     component_subscribe($$self, table, (value) => $$invalidate(1, $table = value));
-    const registerTableInstance = (id2, instance6) => {
+    const registerTableInstance = (id2, instance7) => {
       const tableIsRegistered = window.mesa.tableRegistry.filter((table2) => table2.id === id2).length > 0 ? true : false;
       if (!tableIsRegistered) {
-        window.mesa.tableRegistry.push({ id: msg.id, instance: instance6 });
+        window.mesa.tableRegistry.push({ id: msg.id, instance: instance7 });
         return;
       }
       window.mesa.tableRegistry.forEach((table2) => {
         if (table2.id === id2) {
-          table2.instance = instance6;
+          table2.instance = instance7;
           return table2;
         } else {
           return table2;
@@ -7702,7 +7781,844 @@
   };
   var MesaServerPagination_default = MesaServerPagination;
 
+  // utils/inView.js
+  function inView(node, params = {}) {
+    let observer;
+    const handleIntersect = (e) => {
+      const intersecting = e[0].isIntersecting;
+      if (intersecting) {
+        node.dispatchEvent(new CustomEvent("intersecting"));
+      }
+    };
+    const setObserver = ({ root, top, bottom }) => {
+      const marginTop = top ? top * -1 : 0;
+      const marginBottom = bottom ? bottom * -1 : 0;
+      const rootMargin = `${marginTop}px 0px ${marginBottom}px 0px`;
+      const options = { root, rootMargin };
+      if (observer)
+        observer.disconnect();
+      observer = new IntersectionObserver(handleIntersect, options);
+      observer.observe(node);
+    };
+    setObserver(params);
+    return {
+      update(params2) {
+        setObserver(params2);
+      },
+      destroy() {
+        if (observer)
+          observer.disconnect();
+      }
+    };
+  }
+
+  // utils/fetchData.js
+  var fetchDataInfiniteScroll = async (id, { pageParam }) => {
+    const url = window.mesa.tableRegistry.find((table) => table.id === id).url;
+    const response = await fetch(`${url}?cursor=${pageParam}`);
+    const data = await response.json();
+    return data;
+  };
+
+  // components/MesaServerInfiniteScroll.svelte
+  function get_each_context3(ctx, list, i) {
+    const child_ctx = ctx.slice();
+    child_ctx[12] = list[i];
+    return child_ctx;
+  }
+  function get_each_context_13(ctx, list, i) {
+    const child_ctx = ctx.slice();
+    child_ctx[15] = list[i];
+    return child_ctx;
+  }
+  function get_each_context_23(ctx, list, i) {
+    const child_ctx = ctx.slice();
+    child_ctx[18] = list[i];
+    return child_ctx;
+  }
+  function get_each_context_33(ctx, list, i) {
+    const child_ctx = ctx.slice();
+    child_ctx[21] = list[i];
+    return child_ctx;
+  }
+  function create_if_block3(ctx) {
+    let th;
+    let switch_instance;
+    let current;
+    var switch_value = flexRender(
+      /*header*/
+      ctx[21].column.columnDef.header,
+      /*header*/
+      ctx[21].getContext()
+    );
+    function switch_props(ctx2, dirty) {
+      return {};
+    }
+    if (switch_value) {
+      switch_instance = construct_svelte_component(switch_value, switch_props(ctx));
+    }
+    return {
+      c() {
+        th = element("th");
+        if (switch_instance)
+          create_component(switch_instance.$$.fragment);
+        this.h();
+      },
+      l(nodes) {
+        th = claim_element(nodes, "TH", { class: true });
+        var th_nodes = children(th);
+        if (switch_instance)
+          claim_component(switch_instance.$$.fragment, th_nodes);
+        th_nodes.forEach(detach);
+        this.h();
+      },
+      h() {
+        attr(th, "class", "sticky");
+      },
+      m(target, anchor) {
+        insert_hydration(target, th, anchor);
+        if (switch_instance)
+          mount_component(switch_instance, th, null);
+        current = true;
+      },
+      p(ctx2, dirty) {
+        if (dirty & /*$table*/
+        8 && switch_value !== (switch_value = flexRender(
+          /*header*/
+          ctx2[21].column.columnDef.header,
+          /*header*/
+          ctx2[21].getContext()
+        ))) {
+          if (switch_instance) {
+            group_outros();
+            const old_component = switch_instance;
+            transition_out(old_component.$$.fragment, 1, 0, () => {
+              destroy_component(old_component, 1);
+            });
+            check_outros();
+          }
+          if (switch_value) {
+            switch_instance = construct_svelte_component(switch_value, switch_props(ctx2, dirty));
+            create_component(switch_instance.$$.fragment);
+            transition_in(switch_instance.$$.fragment, 1);
+            mount_component(switch_instance, th, null);
+          } else {
+            switch_instance = null;
+          }
+        } else if (switch_value) {
+        }
+      },
+      i(local) {
+        if (current)
+          return;
+        if (switch_instance)
+          transition_in(switch_instance.$$.fragment, local);
+        current = true;
+      },
+      o(local) {
+        if (switch_instance)
+          transition_out(switch_instance.$$.fragment, local);
+        current = false;
+      },
+      d(detaching) {
+        if (detaching) {
+          detach(th);
+        }
+        if (switch_instance)
+          destroy_component(switch_instance);
+      }
+    };
+  }
+  function create_each_block_33(ctx) {
+    let if_block_anchor;
+    let current;
+    let if_block = !/*header*/
+    ctx[21].isPlaceholder && create_if_block3(ctx);
+    return {
+      c() {
+        if (if_block)
+          if_block.c();
+        if_block_anchor = empty();
+      },
+      l(nodes) {
+        if (if_block)
+          if_block.l(nodes);
+        if_block_anchor = empty();
+      },
+      m(target, anchor) {
+        if (if_block)
+          if_block.m(target, anchor);
+        insert_hydration(target, if_block_anchor, anchor);
+        current = true;
+      },
+      p(ctx2, dirty) {
+        if (!/*header*/
+        ctx2[21].isPlaceholder) {
+          if (if_block) {
+            if_block.p(ctx2, dirty);
+            if (dirty & /*$table*/
+            8) {
+              transition_in(if_block, 1);
+            }
+          } else {
+            if_block = create_if_block3(ctx2);
+            if_block.c();
+            transition_in(if_block, 1);
+            if_block.m(if_block_anchor.parentNode, if_block_anchor);
+          }
+        } else if (if_block) {
+          group_outros();
+          transition_out(if_block, 1, 1, () => {
+            if_block = null;
+          });
+          check_outros();
+        }
+      },
+      i(local) {
+        if (current)
+          return;
+        transition_in(if_block);
+        current = true;
+      },
+      o(local) {
+        transition_out(if_block);
+        current = false;
+      },
+      d(detaching) {
+        if (detaching) {
+          detach(if_block_anchor);
+        }
+        if (if_block)
+          if_block.d(detaching);
+      }
+    };
+  }
+  function create_each_block_23(ctx) {
+    let tr;
+    let t;
+    let current;
+    let each_value_3 = ensure_array_like(
+      /*headerGroup*/
+      ctx[18].headers
+    );
+    let each_blocks = [];
+    for (let i = 0; i < each_value_3.length; i += 1) {
+      each_blocks[i] = create_each_block_33(get_each_context_33(ctx, each_value_3, i));
+    }
+    const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
+      each_blocks[i] = null;
+    });
+    return {
+      c() {
+        tr = element("tr");
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          each_blocks[i].c();
+        }
+        t = space();
+      },
+      l(nodes) {
+        tr = claim_element(nodes, "TR", {});
+        var tr_nodes = children(tr);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          each_blocks[i].l(tr_nodes);
+        }
+        t = claim_space(tr_nodes);
+        tr_nodes.forEach(detach);
+      },
+      m(target, anchor) {
+        insert_hydration(target, tr, anchor);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          if (each_blocks[i]) {
+            each_blocks[i].m(tr, null);
+          }
+        }
+        append_hydration(tr, t);
+        current = true;
+      },
+      p(ctx2, dirty) {
+        if (dirty & /*$table*/
+        8) {
+          each_value_3 = ensure_array_like(
+            /*headerGroup*/
+            ctx2[18].headers
+          );
+          let i;
+          for (i = 0; i < each_value_3.length; i += 1) {
+            const child_ctx = get_each_context_33(ctx2, each_value_3, i);
+            if (each_blocks[i]) {
+              each_blocks[i].p(child_ctx, dirty);
+              transition_in(each_blocks[i], 1);
+            } else {
+              each_blocks[i] = create_each_block_33(child_ctx);
+              each_blocks[i].c();
+              transition_in(each_blocks[i], 1);
+              each_blocks[i].m(tr, t);
+            }
+          }
+          group_outros();
+          for (i = each_value_3.length; i < each_blocks.length; i += 1) {
+            out(i);
+          }
+          check_outros();
+        }
+      },
+      i(local) {
+        if (current)
+          return;
+        for (let i = 0; i < each_value_3.length; i += 1) {
+          transition_in(each_blocks[i]);
+        }
+        current = true;
+      },
+      o(local) {
+        each_blocks = each_blocks.filter(Boolean);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          transition_out(each_blocks[i]);
+        }
+        current = false;
+      },
+      d(detaching) {
+        if (detaching) {
+          detach(tr);
+        }
+        destroy_each(each_blocks, detaching);
+      }
+    };
+  }
+  function create_each_block_13(ctx) {
+    let td;
+    let switch_instance;
+    let current;
+    var switch_value = flexRender(
+      /*cell*/
+      ctx[15].column.columnDef.cell,
+      /*cell*/
+      ctx[15].getContext()
+    );
+    function switch_props(ctx2, dirty) {
+      return {};
+    }
+    if (switch_value) {
+      switch_instance = construct_svelte_component(switch_value, switch_props(ctx));
+    }
+    return {
+      c() {
+        td = element("td");
+        if (switch_instance)
+          create_component(switch_instance.$$.fragment);
+      },
+      l(nodes) {
+        td = claim_element(nodes, "TD", {});
+        var td_nodes = children(td);
+        if (switch_instance)
+          claim_component(switch_instance.$$.fragment, td_nodes);
+        td_nodes.forEach(detach);
+      },
+      m(target, anchor) {
+        insert_hydration(target, td, anchor);
+        if (switch_instance)
+          mount_component(switch_instance, td, null);
+        current = true;
+      },
+      p(ctx2, dirty) {
+        if (dirty & /*$table*/
+        8 && switch_value !== (switch_value = flexRender(
+          /*cell*/
+          ctx2[15].column.columnDef.cell,
+          /*cell*/
+          ctx2[15].getContext()
+        ))) {
+          if (switch_instance) {
+            group_outros();
+            const old_component = switch_instance;
+            transition_out(old_component.$$.fragment, 1, 0, () => {
+              destroy_component(old_component, 1);
+            });
+            check_outros();
+          }
+          if (switch_value) {
+            switch_instance = construct_svelte_component(switch_value, switch_props(ctx2, dirty));
+            create_component(switch_instance.$$.fragment);
+            transition_in(switch_instance.$$.fragment, 1);
+            mount_component(switch_instance, td, null);
+          } else {
+            switch_instance = null;
+          }
+        } else if (switch_value) {
+        }
+      },
+      i(local) {
+        if (current)
+          return;
+        if (switch_instance)
+          transition_in(switch_instance.$$.fragment, local);
+        current = true;
+      },
+      o(local) {
+        if (switch_instance)
+          transition_out(switch_instance.$$.fragment, local);
+        current = false;
+      },
+      d(detaching) {
+        if (detaching) {
+          detach(td);
+        }
+        if (switch_instance)
+          destroy_component(switch_instance);
+      }
+    };
+  }
+  function create_each_block3(ctx) {
+    let tr;
+    let t;
+    let current;
+    let each_value_1 = ensure_array_like(
+      /*row*/
+      ctx[12].getVisibleCells()
+    );
+    let each_blocks = [];
+    for (let i = 0; i < each_value_1.length; i += 1) {
+      each_blocks[i] = create_each_block_13(get_each_context_13(ctx, each_value_1, i));
+    }
+    const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
+      each_blocks[i] = null;
+    });
+    return {
+      c() {
+        tr = element("tr");
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          each_blocks[i].c();
+        }
+        t = space();
+      },
+      l(nodes) {
+        tr = claim_element(nodes, "TR", {});
+        var tr_nodes = children(tr);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          each_blocks[i].l(tr_nodes);
+        }
+        t = claim_space(tr_nodes);
+        tr_nodes.forEach(detach);
+      },
+      m(target, anchor) {
+        insert_hydration(target, tr, anchor);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          if (each_blocks[i]) {
+            each_blocks[i].m(tr, null);
+          }
+        }
+        append_hydration(tr, t);
+        current = true;
+      },
+      p(ctx2, dirty) {
+        if (dirty & /*$table*/
+        8) {
+          each_value_1 = ensure_array_like(
+            /*row*/
+            ctx2[12].getVisibleCells()
+          );
+          let i;
+          for (i = 0; i < each_value_1.length; i += 1) {
+            const child_ctx = get_each_context_13(ctx2, each_value_1, i);
+            if (each_blocks[i]) {
+              each_blocks[i].p(child_ctx, dirty);
+              transition_in(each_blocks[i], 1);
+            } else {
+              each_blocks[i] = create_each_block_13(child_ctx);
+              each_blocks[i].c();
+              transition_in(each_blocks[i], 1);
+              each_blocks[i].m(tr, t);
+            }
+          }
+          group_outros();
+          for (i = each_value_1.length; i < each_blocks.length; i += 1) {
+            out(i);
+          }
+          check_outros();
+        }
+      },
+      i(local) {
+        if (current)
+          return;
+        for (let i = 0; i < each_value_1.length; i += 1) {
+          transition_in(each_blocks[i]);
+        }
+        current = true;
+      },
+      o(local) {
+        each_blocks = each_blocks.filter(Boolean);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          transition_out(each_blocks[i]);
+        }
+        current = false;
+      },
+      d(detaching) {
+        if (detaching) {
+          detach(tr);
+        }
+        destroy_each(each_blocks, detaching);
+      }
+    };
+  }
+  function create_fragment5(ctx) {
+    let div2;
+    let div0;
+    let inView_action;
+    let t0;
+    let table_1;
+    let thead;
+    let t1;
+    let tbody;
+    let t2;
+    let div1;
+    let inView_action_1;
+    let current;
+    let mounted;
+    let dispose;
+    let each_value_2 = ensure_array_like(
+      /*$table*/
+      ctx[3].getHeaderGroups()
+    );
+    let each_blocks_1 = [];
+    for (let i = 0; i < each_value_2.length; i += 1) {
+      each_blocks_1[i] = create_each_block_23(get_each_context_23(ctx, each_value_2, i));
+    }
+    const out = (i) => transition_out(each_blocks_1[i], 1, 1, () => {
+      each_blocks_1[i] = null;
+    });
+    let each_value = ensure_array_like(
+      /*$table*/
+      ctx[3].getRowModel().rows
+    );
+    let each_blocks = [];
+    for (let i = 0; i < each_value.length; i += 1) {
+      each_blocks[i] = create_each_block3(get_each_context3(ctx, each_value, i));
+    }
+    const out_1 = (i) => transition_out(each_blocks[i], 1, 1, () => {
+      each_blocks[i] = null;
+    });
+    return {
+      c() {
+        div2 = element("div");
+        div0 = element("div");
+        t0 = space();
+        table_1 = element("table");
+        thead = element("thead");
+        for (let i = 0; i < each_blocks_1.length; i += 1) {
+          each_blocks_1[i].c();
+        }
+        t1 = space();
+        tbody = element("tbody");
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          each_blocks[i].c();
+        }
+        t2 = space();
+        div1 = element("div");
+        this.h();
+      },
+      l(nodes) {
+        div2 = claim_element(nodes, "DIV", { class: true });
+        var div2_nodes = children(div2);
+        div0 = claim_element(div2_nodes, "DIV", {});
+        children(div0).forEach(detach);
+        t0 = claim_space(div2_nodes);
+        table_1 = claim_element(div2_nodes, "TABLE", { id: true, class: true });
+        var table_1_nodes = children(table_1);
+        thead = claim_element(table_1_nodes, "THEAD", {});
+        var thead_nodes = children(thead);
+        for (let i = 0; i < each_blocks_1.length; i += 1) {
+          each_blocks_1[i].l(thead_nodes);
+        }
+        thead_nodes.forEach(detach);
+        t1 = claim_space(table_1_nodes);
+        tbody = claim_element(table_1_nodes, "TBODY", {});
+        var tbody_nodes = children(tbody);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          each_blocks[i].l(tbody_nodes);
+        }
+        tbody_nodes.forEach(detach);
+        table_1_nodes.forEach(detach);
+        t2 = claim_space(div2_nodes);
+        div1 = claim_element(div2_nodes, "DIV", { class: true });
+        children(div1).forEach(detach);
+        div2_nodes.forEach(detach);
+        this.h();
+      },
+      h() {
+        attr(
+          table_1,
+          "id",
+          /*id*/
+          ctx[0]
+        );
+        attr(table_1, "class", "mesa");
+        attr(div1, "class", "mesa-intersector svelte-1pq1vjr");
+        attr(div2, "class", "mesa-scroll-container svelte-1pq1vjr");
+      },
+      m(target, anchor) {
+        insert_hydration(target, div2, anchor);
+        append_hydration(div2, div0);
+        append_hydration(div2, t0);
+        append_hydration(div2, table_1);
+        append_hydration(table_1, thead);
+        for (let i = 0; i < each_blocks_1.length; i += 1) {
+          if (each_blocks_1[i]) {
+            each_blocks_1[i].m(thead, null);
+          }
+        }
+        append_hydration(table_1, t1);
+        append_hydration(table_1, tbody);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          if (each_blocks[i]) {
+            each_blocks[i].m(tbody, null);
+          }
+        }
+        append_hydration(div2, t2);
+        append_hydration(div2, div1);
+        ctx[9](div2);
+        current = true;
+        if (!mounted) {
+          dispose = [
+            action_destroyer(inView_action = inView.call(null, div0)),
+            listen(
+              div0,
+              "intersecting",
+              /*intersecting_handler*/
+              ctx[7]
+            ),
+            action_destroyer(inView_action_1 = inView.call(null, div1)),
+            listen(
+              div1,
+              "intersecting",
+              /*intersecting_handler_1*/
+              ctx[8]
+            )
+          ];
+          mounted = true;
+        }
+      },
+      p(ctx2, [dirty]) {
+        if (dirty & /*$table*/
+        8) {
+          each_value_2 = ensure_array_like(
+            /*$table*/
+            ctx2[3].getHeaderGroups()
+          );
+          let i;
+          for (i = 0; i < each_value_2.length; i += 1) {
+            const child_ctx = get_each_context_23(ctx2, each_value_2, i);
+            if (each_blocks_1[i]) {
+              each_blocks_1[i].p(child_ctx, dirty);
+              transition_in(each_blocks_1[i], 1);
+            } else {
+              each_blocks_1[i] = create_each_block_23(child_ctx);
+              each_blocks_1[i].c();
+              transition_in(each_blocks_1[i], 1);
+              each_blocks_1[i].m(thead, null);
+            }
+          }
+          group_outros();
+          for (i = each_value_2.length; i < each_blocks_1.length; i += 1) {
+            out(i);
+          }
+          check_outros();
+        }
+        if (dirty & /*$table*/
+        8) {
+          each_value = ensure_array_like(
+            /*$table*/
+            ctx2[3].getRowModel().rows
+          );
+          let i;
+          for (i = 0; i < each_value.length; i += 1) {
+            const child_ctx = get_each_context3(ctx2, each_value, i);
+            if (each_blocks[i]) {
+              each_blocks[i].p(child_ctx, dirty);
+              transition_in(each_blocks[i], 1);
+            } else {
+              each_blocks[i] = create_each_block3(child_ctx);
+              each_blocks[i].c();
+              transition_in(each_blocks[i], 1);
+              each_blocks[i].m(tbody, null);
+            }
+          }
+          group_outros();
+          for (i = each_value.length; i < each_blocks.length; i += 1) {
+            out_1(i);
+          }
+          check_outros();
+        }
+        if (!current || dirty & /*id*/
+        1) {
+          attr(
+            table_1,
+            "id",
+            /*id*/
+            ctx2[0]
+          );
+        }
+      },
+      i(local) {
+        if (current)
+          return;
+        for (let i = 0; i < each_value_2.length; i += 1) {
+          transition_in(each_blocks_1[i]);
+        }
+        for (let i = 0; i < each_value.length; i += 1) {
+          transition_in(each_blocks[i]);
+        }
+        current = true;
+      },
+      o(local) {
+        each_blocks_1 = each_blocks_1.filter(Boolean);
+        for (let i = 0; i < each_blocks_1.length; i += 1) {
+          transition_out(each_blocks_1[i]);
+        }
+        each_blocks = each_blocks.filter(Boolean);
+        for (let i = 0; i < each_blocks.length; i += 1) {
+          transition_out(each_blocks[i]);
+        }
+        current = false;
+      },
+      d(detaching) {
+        if (detaching) {
+          detach(div2);
+        }
+        destroy_each(each_blocks_1, detaching);
+        destroy_each(each_blocks, detaching);
+        ctx[9](null);
+        mounted = false;
+        run_all(dispose);
+      }
+    };
+  }
+  function instance5($$self, $$props, $$invalidate) {
+    let $query;
+    let $table;
+    let { id } = $$props;
+    let { columns = [] } = $$props;
+    let query = createInfiniteQuery({
+      queryKey: ["mesa", "infinite"],
+      queryFn: (pageParam) => fetchDataInfiniteScroll(id, pageParam),
+      initialPageParam: 1,
+      getPreviousPageParam: (firstPage) => firstPage.previousCursor,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      placeholderData: keepPreviousData,
+      maxPages: 3
+    });
+    component_subscribe($$self, query, (value) => $$invalidate(2, $query = value));
+    let flatData = derived(query, ($query2) => {
+      return $query2.data?.pages.flatMap((page) => page.data) ?? [];
+    });
+    let options = derived(flatData, ($flatData) => {
+      return {
+        data: $flatData,
+        columns,
+        getCoreRowModel: getCoreRowModel()
+      };
+    });
+    let table = createSvelteTable(options);
+    component_subscribe($$self, table, (value) => $$invalidate(3, $table = value));
+    let container;
+    const intersecting_handler = () => {
+      if ($query.hasPreviousPage && !$query.isFetchingPreviousPage) {
+        $query.fetchPreviousPage();
+        container.scroll({ top: 5 });
+      }
+    };
+    const intersecting_handler_1 = () => {
+      if ($query.hasNextPage && !$query.isFetchingNextPage) {
+        $query.fetchNextPage();
+        container.scroll({ top: container.clientHeight - 10 });
+      }
+    };
+    function div2_binding($$value) {
+      binding_callbacks[$$value ? "unshift" : "push"](() => {
+        container = $$value;
+        $$invalidate(1, container);
+      });
+    }
+    $$self.$$set = ($$props2) => {
+      if ("id" in $$props2)
+        $$invalidate(0, id = $$props2.id);
+      if ("columns" in $$props2)
+        $$invalidate(6, columns = $$props2.columns);
+    };
+    return [
+      id,
+      container,
+      $query,
+      $table,
+      query,
+      table,
+      columns,
+      intersecting_handler,
+      intersecting_handler_1,
+      div2_binding
+    ];
+  }
+  var MesaServerInfiniteScroll = class extends SvelteComponent {
+    constructor(options) {
+      super();
+      init(this, options, instance5, create_fragment5, safe_not_equal, { id: 0, columns: 6 });
+    }
+  };
+  var MesaServerInfiniteScroll_default = MesaServerInfiniteScroll;
+
   // components/Mesa.svelte
+  function create_if_block_2(ctx) {
+    let mesaserverinfinitescroll;
+    let current;
+    mesaserverinfinitescroll = new MesaServerInfiniteScroll_default({
+      props: {
+        id: (
+          /*id*/
+          ctx[0]
+        ),
+        columns: (
+          /*columns*/
+          ctx[1]
+        )
+      }
+    });
+    return {
+      c() {
+        create_component(mesaserverinfinitescroll.$$.fragment);
+      },
+      l(nodes) {
+        claim_component(mesaserverinfinitescroll.$$.fragment, nodes);
+      },
+      m(target, anchor) {
+        mount_component(mesaserverinfinitescroll, target, anchor);
+        current = true;
+      },
+      p(ctx2, dirty) {
+        const mesaserverinfinitescroll_changes = {};
+        if (dirty & /*id*/
+        1)
+          mesaserverinfinitescroll_changes.id = /*id*/
+          ctx2[0];
+        if (dirty & /*columns*/
+        2)
+          mesaserverinfinitescroll_changes.columns = /*columns*/
+          ctx2[1];
+        mesaserverinfinitescroll.$set(mesaserverinfinitescroll_changes);
+      },
+      i(local) {
+        if (current)
+          return;
+        transition_in(mesaserverinfinitescroll.$$.fragment, local);
+        current = true;
+      },
+      o(local) {
+        transition_out(mesaserverinfinitescroll.$$.fragment, local);
+        current = false;
+      },
+      d(detaching) {
+        destroy_component(mesaserverinfinitescroll, detaching);
+      }
+    };
+  }
   function create_if_block_1(ctx) {
     let mesaserverpagination;
     let current;
@@ -7715,10 +8631,6 @@
         columns: (
           /*columns*/
           ctx[1]
-        ),
-        paginationOptions: (
-          /*paginationOptions*/
-          ctx[4]
         )
       }
     });
@@ -7743,10 +8655,6 @@
         2)
           mesaserverpagination_changes.columns = /*columns*/
           ctx2[1];
-        if (dirty & /*paginationOptions*/
-        16)
-          mesaserverpagination_changes.paginationOptions = /*paginationOptions*/
-          ctx2[4];
         mesaserverpagination.$set(mesaserverpagination_changes);
       },
       i(local) {
@@ -7764,7 +8672,7 @@
       }
     };
   }
-  function create_if_block3(ctx) {
+  function create_if_block4(ctx) {
     let mesaclient;
     let current;
     mesaclient = new MesaClient_default({
@@ -7780,10 +8688,6 @@
         data: (
           /*data*/
           ctx[2]
-        ),
-        paginationOptions: (
-          /*paginationOptions*/
-          ctx[4]
         )
       }
     });
@@ -7812,10 +8716,6 @@
         4)
           mesaclient_changes.data = /*data*/
           ctx2[2];
-        if (dirty & /*paginationOptions*/
-        16)
-          mesaclient_changes.paginationOptions = /*paginationOptions*/
-          ctx2[4];
         mesaclient.$set(mesaclient_changes);
       },
       i(local) {
@@ -7838,7 +8738,7 @@
     let if_block;
     let if_block_anchor;
     let current;
-    const if_block_creators = [create_if_block3, create_if_block_1];
+    const if_block_creators = [create_if_block4, create_if_block_1, create_if_block_2];
     const if_blocks = [];
     function select_block_type(ctx2, dirty) {
       if (!/*ssrOptions*/
@@ -7850,6 +8750,12 @@
         ctx2[3].usePagination
       )
         return 1;
+      if (
+        /*ssrOptions*/
+        ctx2[3].useSSR && /*ssrOptions*/
+        ctx2[3].useInfiniteScroll
+      )
+        return 2;
       return -1;
     }
     if (~(current_block_type_index = select_block_type(ctx, -1))) {
@@ -7923,14 +8829,14 @@
       }
     };
   }
-  function create_fragment5(ctx) {
+  function create_fragment6(ctx) {
     let queryclientprovider;
     let current;
     queryclientprovider = new QueryClientProvider_default({
       props: {
         client: (
           /*queryClient*/
-          ctx[5]
+          ctx[4]
         ),
         $$slots: { default: [create_default_slot] },
         $$scope: { ctx }
@@ -7949,8 +8855,8 @@
       },
       p(ctx2, [dirty]) {
         const queryclientprovider_changes = {};
-        if (dirty & /*$$scope, id, columns, data, paginationOptions, ssrOptions*/
-        95) {
+        if (dirty & /*$$scope, id, columns, data, ssrOptions*/
+        47) {
           queryclientprovider_changes.$$scope = { dirty, ctx: ctx2 };
         }
         queryclientprovider.$set(queryclientprovider_changes);
@@ -7970,12 +8876,11 @@
       }
     };
   }
-  function instance5($$self, $$props, $$invalidate) {
+  function instance6($$self, $$props, $$invalidate) {
     let { id } = $$props;
     let { columns = [] } = $$props;
     let { data = [] } = $$props;
     let { ssrOptions = {} } = $$props;
-    let { paginationOptions = {} } = $$props;
     const queryClient = new QueryClient();
     $$self.$$set = ($$props2) => {
       if ("id" in $$props2)
@@ -7986,20 +8891,17 @@
         $$invalidate(2, data = $$props2.data);
       if ("ssrOptions" in $$props2)
         $$invalidate(3, ssrOptions = $$props2.ssrOptions);
-      if ("paginationOptions" in $$props2)
-        $$invalidate(4, paginationOptions = $$props2.paginationOptions);
     };
-    return [id, columns, data, ssrOptions, paginationOptions, queryClient];
+    return [id, columns, data, ssrOptions, queryClient];
   }
   var Mesa = class extends SvelteComponent {
     constructor(options) {
       super();
-      init(this, options, instance5, create_fragment5, safe_not_equal, {
+      init(this, options, instance6, create_fragment6, safe_not_equal, {
         id: 0,
         columns: 1,
         data: 2,
-        ssrOptions: 3,
-        paginationOptions: 4
+        ssrOptions: 3
       });
     }
     get id() {
@@ -8028,13 +8930,6 @@
     }
     set ssrOptions(ssrOptions) {
       this.$$set({ ssrOptions });
-      flush();
-    }
-    get paginationOptions() {
-      return this.$$.ctx[4];
-    }
-    set paginationOptions(paginationOptions) {
-      this.$$set({ paginationOptions });
       flush();
     }
   };
