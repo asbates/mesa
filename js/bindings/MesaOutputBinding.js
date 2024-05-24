@@ -5,7 +5,7 @@ export class MesaOutputBinding extends Shiny.OutputBinding {
   constructor() {
     super();
     this.component = Mesa;
-    this.selector = '.mesa';
+    this.selector = '.mesa-table';
   }
 
   initializeComponent(props) {

@@ -4,21 +4,25 @@
 #'
 #' @param data The data to render.
 #' @param ssrOptions Server-side rendering options. See [mesaSSROptions] for details.
+#' @param styleOptions Options for styling the table. See [mesaStyleOptions] for details.
 #'
 #' @export
 mesa <- function(
     data,
-    ssrOptions = mesaSSROptions
+    ssrOptions = mesaSSROptions,
+    styleOptions = mesaStyleOptions
 ) {
   # need to merge options lists with the defaults
   # so users only need to specify the change, rather than the whole list
   columns <- make_column_defs(data)
   ssrOptions <- merge_lists(mesaSSROptions, ssrOptions)
+  styleOptions <- merge_lists(mesaStyleOptions, styleOptions)
 
   list(
     columns = columns,
     data = data,
-    ssrOptions = ssrOptions
+    ssrOptions = ssrOptions,
+    styleOptions = styleOptions
   )
 }
 

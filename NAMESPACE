@@ -3,3 +3,4 @@
 export(mesa)
 export(mesaOutput)
 export(mesaSSROptions)
+export(mesaStyleOptions)

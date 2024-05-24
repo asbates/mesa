@@ -10,16 +10,17 @@
   export let columns = [];
   export let data = [];
   export let ssrOptions = {};
+  export let styleOptions = {};
 
   const queryClient = new QueryClient();
 </script>
 
 <QueryClientProvider client={queryClient}>
   {#if !ssrOptions.useSSR}
-    <MesaClient {id} {columns} {data} />
+    <MesaClient {id} {columns} {data} {styleOptions} />
   {:else if ssrOptions.useSSR && ssrOptions.useInfiniteScroll}
-    <MesaServerInfiniteScroll {id} {columns} />
+    <MesaServerInfiniteScroll {id} {columns} {styleOptions} />
   {:else if ssrOptions.useSSR && ssrOptions.usePagination}
-    <MesaServerPagination {id} {columns} />
+    <MesaServerPagination {id} {columns} {styleOptions} />
   {/if}
 </QueryClientProvider>
