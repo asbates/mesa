@@ -4,12 +4,14 @@
 \alias{mesa}
 \title{A mesa table}
 \usage{
-mesa(data, ssrOptions = mesaSSROptions)
+mesa(data, ssrOptions = mesaSSROptions, styleOptions = mesaStyleOptions)
 }
 \arguments{
 \item{data}{The data to render.}
 
 \item{ssrOptions}{Server-side rendering options. See \link{mesaSSROptions} for details.}
+
+\item{styleOptions}{Options for styling the table. See \link{mesaStyleOptions} for details.}
 }
 \description{
 Use inside \link{renderMesa} to render a \code{mesa} table in your app.

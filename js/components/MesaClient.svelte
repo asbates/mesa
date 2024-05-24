@@ -7,10 +7,12 @@
     flexRender,
   } from '@tanstack/svelte-table';
   import { writable } from 'svelte/store';
+  import { registerMesaTable, resolveStyleOptions } from '../utils/mesa.js';
 
   export let id;
   export let columns = [];
   export let data = [];
+  export let styleOptions = {};
 
   let options = writable({
     data: data,
@@ -18,21 +20,29 @@
     getCoreRowModel: getCoreRowModel(),
   });
 
-  let table = createSvelteTable(options);
+  $: {
+    options.update((oldOptions) => {
+      return {
+        ...oldOptions,
+        columns: columns,
+        data: data,
+      };
+    });
+  }
 
-  window.mesa.tableRegistry.push({
-    id: id,
-    instance: table,
-  });
+  let table = createSvelteTable(options);
+  registerMesaTable(id, table);
+
+  $: resolvedStyleOptions = resolveStyleOptions(styleOptions);
 </script>
 
-<table {id} class="mesa">
-  <thead>
+<table {id} class={resolvedStyleOptions.tableClass}>
+  <thead class={resolvedStyleOptions.theadClass}>
     {#each $table.getHeaderGroups() as headerGroup}
-      <tr>
+      <tr class={resolvedStyleOptions.trClass}>
         {#each headerGroup.headers as header}
           {#if !header.isPlaceholder}
-            <th class="sticky">
+            <th class={resolvedStyleOptions.thClass}>
               <svelte:component
                 this={flexRender(
                   header.column.columnDef.header,
@@ -45,11 +55,11 @@
       </tr>
     {/each}
   </thead>
-  <tbody>
+  <tbody class={resolvedStyleOptions.tbodyClass}>
     {#each $table.getRowModel().rows as row}
-      <tr>
+      <tr class={resolvedStyleOptions.trClass}>
         {#each row.getVisibleCells() as cell}
-          <td>
+          <td class={resolvedStyleOptions.tdClass}>
             <svelte:component
               this={flexRender(cell.column.columnDef.cell, cell.getContext())}
             />
@@ -59,12 +69,3 @@
     {/each}
   </tbody>
 </table>
-
-<style>
-  .sticky {
-    position: sticky;
-    top: 0;
-    background-color: #242424;
-    z-index: 1;
-  }
-</style>

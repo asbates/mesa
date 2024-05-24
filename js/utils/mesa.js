@@ -10,7 +10,7 @@ export const registerMesaTable = (id, instance) => {
       : false;
 
   if (!tableIsRegistered) {
-    window.mesa.tableRegistry.push({ id: msg.id, instance: instance });
+    window.mesa.tableRegistry.push({ id: id, instance: instance });
     return;
   }
 
@@ -43,4 +43,45 @@ export const registerMesaData = (msg) => {
       return table;
     }
   });
+};
+
+export const resolveStyleOptions = (options) => {
+  const tableClass = ['mesa-table']
+    .concat(options.tableClass)
+    .filter((cls) => cls !== '')
+    .join(' ');
+
+  const theadClass = ['mesa-thead']
+    .concat(options.theadClass)
+    .filter((cls) => cls !== '')
+    .join(' ');
+
+  const tbodyClass = ['mesa-tbody']
+    .concat(options.tbodyClass)
+    .filter((cls) => cls !== '')
+    .join(' ');
+
+  const thClass = ['mesa-th']
+    .concat(options.thClass)
+    .filter((cls) => cls !== '')
+    .join(' ');
+
+  const trClass = ['mesa-tr']
+    .concat(options.trClass)
+    .filter((cls) => cls !== '')
+    .join(' ');
+
+  const tdClass = ['mesa-td']
+    .concat(options.tdClass)
+    .filter((cls) => cls !== '')
+    .join(' ');
+
+  return {
+    tableClass,
+    theadClass,
+    tbodyClass,
+    thClass,
+    trClass,
+    tdClass,
+  };
 };

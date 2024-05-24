@@ -11,10 +11,11 @@
   import { derived } from 'svelte/store';
   import inView from '../utils/inView.js';
   import { fetchDataInfiniteScroll } from '../utils/fetchData.js';
-  import { registerMesaTable } from '../utils/mesa.js';
+  import { registerMesaTable, resolveStyleOptions } from '../utils/mesa.js';
 
   export let id;
   export let columns = [];
+  export let styleOptions = {};
 
   let query = createInfiniteQuery({
     queryKey: ['mesa', 'infinite'],
@@ -41,6 +42,8 @@
   let table = createSvelteTable(options);
   registerMesaTable(id, table);
 
+  $: resolvedStyleOptions = resolveStyleOptions(styleOptions);
+
   let container;
 </script>
 
@@ -54,13 +57,13 @@
       }
     }}
   ></div>
-  <table {id} class="mesa">
-    <thead>
+  <table {id} class={resolvedStyleOptions.tableClass}>
+    <thead class={resolvedStyleOptions.theadClass}>
       {#each $table.getHeaderGroups() as headerGroup}
-        <tr>
+        <tr class={resolvedStyleOptions.trClass}>
           {#each headerGroup.headers as header}
             {#if !header.isPlaceholder}
-              <th class="sticky">
+              <th class={resolvedStyleOptions.thClass}>
                 <svelte:component
                   this={flexRender(
                     header.column.columnDef.header,
@@ -73,11 +76,11 @@
         </tr>
       {/each}
     </thead>
-    <tbody>
+    <tbody class={resolvedStyleOptions.tbodyClass}>
       {#each $table.getRowModel().rows as row}
-        <tr>
+        <tr class={resolvedStyleOptions.trClass}>
           {#each row.getVisibleCells() as cell}
-            <td>
+            <td class={resolvedStyleOptions.tdClass}>
               <svelte:component
                 this={flexRender(cell.column.columnDef.cell, cell.getContext())}
               />

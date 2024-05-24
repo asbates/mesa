@@ -22,3 +22,32 @@ mesaSSROptions <- list(
 )
 
 
+#' Default style options
+#'
+#' These are the default values used for the `styleOptions` argument of [mesa].
+#' This allows you to add *additional* classes to a table. A `mesa` table comes
+#'   with the classes listed below. To add additional classes, provide a
+#'   character vector of length 1, wich each class separates by a space.
+#'   For example if you wanted to use Bootstrap 5 table styling, you could set
+#'   `tableClass = "table table-primary"`. In the output, the `<table>` tag
+#'   would have the class `mesa-table table table-primary.`
+#'
+#' - `<table>`: `mesa-table`
+#' - `<thead>`: `mesa-thead`
+#' - `<tbody>`: `mesa-tbody`
+#' - `<th>`: `mesa-th`
+#' - `<tr>`: `mesa-tr`
+#' - `<td>`: `mesa-td`
+#'
+#'
+#' @export
+mesaStyleOptions = list(
+  tableClass = "",
+  theadClass = "",
+  tbodyClass = "",
+  thClass = "",
+  trClass = "",
+  tdClass = ""
+)
+
+
